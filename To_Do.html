@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>مدير المهام</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EEF1F0;
+    --surface:#FFFFFF;
+    --ink:#16221E;
+    --ink-soft:#5B6B65;
+    --accent:#0F6B5C;
+    --accent-soft:#D8ECE6;
+    --danger:#B3462C;
+    --line:#DCE3E0;
+    --radius:10px;
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12181A;
+      --surface:#1B2422;
+      --ink:#EDF2F0;
+      --ink-soft:#93A29B;
+      --accent:#3FBF9F;
+      --accent-soft:#1E3A33;
+      --danger:#E08064;
+      --line:#2A3532;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12181A; --surface:#1B2422; --ink:#EDF2F0; --ink-soft:#93A29B;
+    --accent:#3FBF9F; --accent-soft:#1E3A33; --danger:#E08064; --line:#2A3532;
+  }
+  html,body{height:100%;}
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif;
+    display:flex; justify-content:center;
+  }
+  .wrap{ width:100%; max-width:640px; padding:28px 18px 40px; }
+  header{ margin-bottom:22px; }
+  h1{ font-size:26px; font-weight:700; margin:0 0 4px; }
+  .sub{ color:var(--ink-soft); font-size:14px; margin:0; }
+
+  .stats{ display:flex; gap:10px; margin:18px 0; }
+  .stat{ flex:1; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:12px 14px; }
+  .stat .n{ font-size:22px; font-weight:700; }
+  .stat .l{ font-size:12px; color:var(--ink-soft); }
+
+  form{ display:flex; gap:8px; margin-bottom:16px; }
+  input[type=text]{
+    flex:1; padding:12px 14px; border-radius:var(--radius); border:1px solid var(--line);
+    background:var(--surface); color:var(--ink); font-family:inherit; font-size:15px;
+  }
+  input[type=text]:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+  select{
+    padding:0 10px; border-radius:var(--radius); border:1px solid var(--line);
+    background:var(--surface); color:var(--ink); font-family:inherit; font-size:14px;
+  }
+  button{
+    border:none; border-radius:var(--radius); padding:0 18px; font-family:inherit;
+    font-size:15px; font-weight:600; cursor:pointer; background:var(--accent); color:#fff;
+  }
+  button:focus-visible, select:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+  .filters{ display:flex; gap:8px; margin-bottom:14px; }
+  .filters button{
+    background:transparent; color:var(--ink-soft); border:1px solid var(--line); font-weight:500; padding:6px 14px; font-size:13px;
+  }
+  .filters button.active{ background:var(--accent-soft); color:var(--accent); border-color:var(--accent-soft); }
+
+  ul{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
+  li{
+    display:flex; align-items:center; gap:10px; background:var(--surface);
+    border:1px solid var(--line); border-radius:var(--radius); padding:12px 14px;
+  }
+  li.done .title{ text-decoration:line-through; color:var(--ink-soft); }
+  .check{
+    width:20px; height:20px; border-radius:50%; border:2px solid var(--line); flex:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; background:transparent;
+  }
+  li.done .check{ background:var(--accent); border-color:var(--accent); color:#fff; font-size:12px; }
+  .title{ flex:1; font-size:15px; }
+  .tag{ font-size:11px; padding:2px 8px; border-radius:20px; }
+  .tag.high{ background:#F5DED6; color:var(--danger); }
+  .tag.med{ background:var(--accent-soft); color:var(--accent); }
+  .tag.low{ background:var(--line); color:var(--ink-soft); }
+  .del{ background:transparent; color:var(--ink-soft); font-size:18px; padding:0 4px; }
+
+  .empty{ text-align:center; color:var(--ink-soft); padding:40px 0; font-size:14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>مدير المهام</h1>
+    <p class="sub">نظّم مهامك اليومية بسرعة وسهولة</p>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="n" id="statTotal">0</div><div class="l">الإجمالي</div></div>
+    <div class="stat"><div class="n" id="statDone">0</div><div class="l">مكتملة</div></div>
+    <div class="stat"><div class="n" id="statPending">0</div><div class="l">متبقية</div></div>
+  </div>
+
+  <form id="addForm">
+    <input type="text" id="taskInput" placeholder="أضف مهمة جديدة..." maxlength="120" required>
+    <select id="prioritySelect">
+      <option value="low">منخفضة</option>
+      <option value="med" selected>متوسطة</option>
+      <option value="high">عالية</option>
+    </select>
+    <button type="submit">إضافة</button>
+  </form>
+
+  <div class="filters">
+    <button data-filter="all" class="active">الكل</button>
+    <button data-filter="pending">المتبقية</button>
+    <button data-filter="done">المكتملة</button>
+  </div>
+
+  <ul id="list"></ul>
+  <div class="empty" id="emptyMsg" style="display:none;">لا توجد مهام هنا</div>
+</div>
+
+<script>
+let tasks = [];
+let filter = 'all';
+
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+function render(){
+  const list = document.getElementById('list');
+  const emptyMsg = document.getElementById('emptyMsg');
+  list.innerHTML = '';
+
+  const filtered = tasks.filter(t=>{
+    if(filter==='pending') return !t.done;
+    if(filter==='done') return t.done;
+    return true;
+  });
+
+  emptyMsg.style.display = filtered.length ? 'none' : 'block';
+
+  filtered.forEach(t=>{
+    const li = document.createElement('li');
+    if(t.done) li.classList.add('done');
+    const tagLabel = {low:'منخفضة', med:'متوسطة', high:'عالية'}[t.priority];
+    li.innerHTML = `
+      <button class="check" aria-label="تم الإنجاز">${t.done?'✓':''}</button>
+      <span class="title"></span>
+      <span class="tag ${t.priority}">${tagLabel}</span>
+      <button class="del" aria-label="حذف">✕</button>
+    `;
+    li.querySelector('.title').textContent = t.text;
+    li.querySelector('.check').onclick = ()=>{ t.done = !t.done; save(); render(); };
+    li.querySelector('.del').onclick = ()=>{ tasks = tasks.filter(x=>x.id!==t.id); save(); render(); };
+    list.appendChild(li);
+  });
+
+  document.getElementById('statTotal').textContent = tasks.length;
+  document.getElementById('statDone').textContent = tasks.filter(t=>t.done).length;
+  document.getElementById('statPending').textContent = tasks.filter(t=>!t.done).length;
+}
+
+function save(){
+  try{ localStorage.setItem('todo_tasks_v1', JSON.stringify(tasks)); }catch(e){ console.error(e); }
+}
+function load(){
+  try{
+    const raw = localStorage.getItem('todo_tasks_v1');
+    tasks = raw ? JSON.parse(raw) : [];
+  }catch(e){ tasks = []; }
+}
+
+document.getElementById('addForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  const input = document.getElementById('taskInput');
+  const priority = document.getElementById('prioritySelect').value;
+  const text = input.value.trim();
+  if(!text) return;
+  tasks.unshift({ id: uid(), text, done:false, priority });
+  input.value='';
+  save(); render();
+});
+
+document.querySelectorAll('.filters button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.filters button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    filter = btn.dataset.filter;
+    render();
+  });
+});
+
+load();
+render();
+</script>
+</body>
+</html>
